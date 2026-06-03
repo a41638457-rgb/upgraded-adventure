@@ -1,0 +1,9 @@
+{
+  "name": "My Good Day Tracker",
+  "short_name": "My Tracker",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#c9a84c",
+  "icons": []
+}
