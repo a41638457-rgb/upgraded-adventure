@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <title>My Checklist</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #1a1a2e;
+      color: #e8e4dc;
+      font-family: Arial, sans-serif;
+      padding: 24px 16px;
+      max-width: 500px;
+      margin: 0 auto;
+      font-size: 18px;
+    }
+    h1 { color: #c9a84c; font-size: 1.6rem; margin-bottom: 20px; }
+    .item {
+      background: #161618;
+      border: 1px solid #2a2a2e;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+      width: 100%;
+    }
+    .item h3 { color: #c9a84c; font-size: 1.1rem; margin-bottom: 6px; }
+    .item p { font-size: 0.85rem; color: #7a7670; margin: 4px 0; }
+    button {
+      padding: 10px 18px;
+      background: transparent;
+      border: 1px solid #c9a84c;
+      color: #c9a84c;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-size: 0.9rem;
+      width: 100%;
+    }
+    button:hover { background: #c9a84c; color: #1a1a2e; }
+    .reset {
+      margin-top: 16px;
+      border-color: #555;
+      color: #555;
+    }
+    .reset:hover { background: #555; color: white; }
+  </style>
+</head>
+<body>
+  <h1>My Good Day Tracker</h1>
+  <div class="item">
+    <h3>🏃 Workout</h3>
+    <p id="workout-status">Not logged yet — do this first!</p>
+    <button onclick="logNow('workout', 0)">Log Workout</button>
+  </div>
+  <div class="item">
+    <h3>💧 Water</h3>
+    <p id="water-status">Not logged yet</p>
+    <button onclick="logNow('water', 120)">Log a Glass</button>
+  </div>
+  <div class="item">
+    <h3>🍽️ Meal</h3>
+    <p id="meal-status">Not logged yet</p>
+    <button onclick="logNow('meal', 300)">Log Meal</button>
+  </div>
+  <div class="item">
+    <h3>💊 Multivitamin</h3>
+    <p id="vitamin-status">Not taken yet today</p>
+    <button onclick="logNow('vitamin', 1440)">Log Vitamin</button>
+  </div>
+  <button class="reset" onclick="resetAll()">↺ New Day</button>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+  function logNow(key, intervalMinutes) {
+    const now = new Date();
+    localStorage.setItem(key + '_time', now.toISOString());
+    if (key === 'water') {
+      const count = parseInt(localStorage.getItem('water_count') || '0') + 1;
+      localStorage.setItem('water_count', count);
+    }
+    updateDisplay();
+  }
+  function formatTime(date) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  function timeUntil(targetDate) {
+    const diff = targetDate - new Date();
+    if (diff <= 0) return 'due now!';
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    return h > 0 ? `in ${h}h ${m}m` : `in ${m}m`;
+  }
+  function updateDisplay() {
+    const items = [
+      { key: 'workout', interval: 0 },
+      { key: 'water', interval: 120 },
+      { key: 'meal', interval: 300 },
+      { key: 'vitamin', interval: 1440 }
+    ];
+    items.forEach(item => {
+      const timeStr = localStorage.getItem(item.key + '_time');
+      const el = document.getElementById(item.key + '-status');
+      if (!timeStr) return;
+      const loggedAt = new Date(timeStr);
+      const next = new Date(loggedAt.getTime() + item.interval * 60000);
+      if (item.key === 'water') {
+        const count = localStorage.getItem('water_count') || 1;
+        el.textContent = `${count} glass(es) today — last at ${formatTime(loggedAt)} — next ${timeUntil(next)}`;
+      } else if (item.key === 'workout') {
+        el.textContent = `Done at ${formatTime(loggedAt)} ✓`;
+      } else {
+        el.textContent = `Last at ${formatTime(loggedAt)} — next ${timeUntil(next)}`;
+      }
+    });
+  }
+  function resetAll() {
+    ['workout', 'water', 'meal', 'vitamin'].forEach(k => {
+      localStorage.removeItem(k + '_time');
+    });
+    localStorage.removeItem('water_count');
+    ['workout', 'water', 'meal', 'vitamin'].forEach(k => {
+      document.getElementById(k + '-status').textContent = 'Not logged yet';
+    });
+  }
+  setInterval(updateDisplay, 60000);
+  updateDisplay();
+</script>
+</body>
+</html>
